@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import { connectToDatabase } from './src/config/db.js';
 import authRoutes from './src/routes/authRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
+import postRoutes from './src/routes/postRoutes.js';
+import commentRoutes from './src/routes/commentRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +37,8 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/comments', commentRoutes);
 
 // 404 handler for unknown routes
 app.use((req, res, next) => {

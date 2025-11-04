@@ -2,14 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Wind, Play, Pause, Volume2, RefreshCw } from 'lucide-react';
+import { Wind, Play, Pause } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import AmbientSounds from '@/components/CalmTools/AmbientSounds';
 
 const CalmToolsPage = ({ user, onLogout }) => {
   const [activeExercise, setActiveExercise] = useState(null);
   const [breathingPhase, setBreathingPhase] = useState('ready');
   const [breathingCount, setBreathingCount] = useState(0);
-  const [selectedSound, setSelectedSound] = useState(null);
+  // Ambient Sounds UI moved into dedicated component
   const breathingIntervalRef = useRef(null);
 
   const breathingExercises = [
@@ -18,12 +19,7 @@ const CalmToolsPage = ({ user, onLogout }) => {
     { name: 'Simple Deep Breathing', description: 'Inhale for 4, exhale for 6', pattern: [4, 0, 6, 0] },
   ];
 
-  const ambientSounds = [
-    { name: 'Rain', icon: '🌧️', description: 'Gentle rainfall' },
-    { name: 'Ocean Waves', icon: '🌊', description: 'Calming ocean sounds' },
-    { name: 'Forest', icon: '🌳', description: 'Birds and rustling leaves' },
-    { name: 'White Noise', icon: '🔊', description: 'Soothing static' },
-  ];
+  // Ambient sounds list handled inside AmbientSounds component
 
   const dailyQuotes = [
     "You are stronger than you think.",
@@ -150,44 +146,7 @@ const CalmToolsPage = ({ user, onLogout }) => {
             </TabsContent>
 
             <TabsContent value="sounds" className="space-y-6">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {ambientSounds.map((sound) => (
-                  <Card 
-                    key={sound.name}
-                    className={`p-6 bg-white/70 backdrop-blur-sm border-none shadow-lg hover:shadow-xl transition-all cursor-pointer ${
-                      selectedSound === sound.name ? 'ring-2 ring-green-600' : ''
-                    }`}
-                    onClick={() => setSelectedSound(selectedSound === sound.name ? null : sound.name)}
-                  >
-                    <div className="text-center">
-                      <div className="text-5xl mb-3">{sound.icon}</div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-1">{sound.name}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{sound.description}</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full rounded-full"
-                      >
-                        {selectedSound === sound.name ? (
-                          <><Pause size={16} className="mr-2" /> Playing</>
-                        ) : (
-                          <><Volume2 size={16} className="mr-2" /> Play</>
-                        )}
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              {selectedSound && (
-                <Card className="p-6 bg-white/70 backdrop-blur-sm border-none shadow-xl text-center">
-                  <p className="text-gray-600 mb-2">Now Playing</p>
-                  <p className="text-xl font-semibold text-gray-800 mb-4">{selectedSound}</p>
-                  <p className="text-sm text-gray-500">
-                    Note: Audio playback is simulated in this demo. In production, actual sound files would play here.
-                  </p>
-                </Card>
-              )}
+              <AmbientSounds />
             </TabsContent>
           </Tabs>
         </div>

@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
-import { Heart, MessageCircle, Edit2, Calendar, User, Upload, X } from 'lucide-react';
+import { Heart, MessageCircle, Edit2, Calendar, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '../lib/api';
 import { getAvailableAvatars, resolveAvatarUrl } from '../lib/utils';
@@ -105,23 +105,7 @@ const ProfilePage = ({ user, onLogout }) => {
     setIsEditModalOpen(true);
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors({ ...errors, image: 'Image size should be less than 5MB' });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditForm({ ...editForm, profilePicture: reader.result });
-        setPreviewImage(reader.result);
-        setErrors({ ...errors, image: null });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // Removed image upload handler to enforce avatar-only selection
 
   const handleRemoveImage = () => {
     setEditForm({ ...editForm, profilePicture: null });
@@ -365,14 +349,14 @@ const ProfilePage = ({ user, onLogout }) => {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-gray-900">Edit Profile</DialogTitle>
             <DialogDescription className="text-gray-600">
-              Update your profile information. Changes will be saved to your device.
+              Choose your avatar – your identity stays private while you express yourself!
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="profilePicture" className="text-gray-700 font-semibold">
-                Profile Picture
+                Choose an Avatar
               </Label>
               <div className="space-y-4">
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
@@ -383,7 +367,7 @@ const ProfilePage = ({ user, onLogout }) => {
                         key={a.path}
                         type="button"
                         onClick={() => handleChooseAvatar(a.path)}
-                        className={`relative w-20 h-20 rounded-full overflow-hidden border-2 ${selected ? 'border-green-500' : 'border-transparent'} transition-transform duration-200 hover:scale-105 focus:outline-none`}
+                        className={`relative w-20 h-20 rounded-full overflow-hidden border-2 ${selected ? 'border-green-500' : 'border-transparent'} transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400`}
                         aria-label={`Choose avatar ${a.fileName}`}
                       >
                         <img
@@ -391,24 +375,23 @@ const ProfilePage = ({ user, onLogout }) => {
                           alt={a.fileName}
                           className="w-full h-full rounded-full object-cover"
                         />
-                        {/* Selected label removed; border indicates selection */}
                       </button>
                     );
                   })}
                 </div>
-
                 <div className="flex items-center space-x-4">
                   {(previewImage || editForm.profilePicture) ? (
                     <div className="relative">
                       <img 
                         src={resolveAvatarUrl(previewImage || editForm.profilePicture) || previewImage || editForm.profilePicture}
-                        alt="Preview"
+                        alt="Selected avatar preview"
                         className="w-20 h-20 rounded-full object-cover shadow-lg ring-4 ring-green-100"
                       />
                       <button
                         onClick={handleRemoveImage}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md"
                         type="button"
+                        aria-label="Clear selected avatar"
                       >
                         <X size={16} />
                       </button>
@@ -418,25 +401,8 @@ const ProfilePage = ({ user, onLogout }) => {
                       <User size={40} className="text-white" />
                     </div>
                   )}
-                  <div className="flex-1">
-                    <label
-                      htmlFor="imageUpload"
-                      className="cursor-pointer inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full hover:from-green-600 hover:to-green-700 transition-colors shadow-md"
-                    >
-                      <Upload size={16} className="mr-2" />
-                      Upload Image
-                    </label>
-                    <input
-                      id="imageUpload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">PNG, JPG up to 5MB</p>
-                    {errors.image && (
-                      <p className="text-xs text-red-500 mt-1">{errors.image}</p>
-                    )}
+                  <div className="flex-1 text-sm text-gray-600">
+                    Your avatar helps others recognize you while keeping you anonymous.
                   </div>
                 </div>
               </div>

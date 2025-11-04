@@ -31,9 +31,9 @@ const LandingPage = () => {
 
         {/* Hero Section */}
         <div className="max-w-4xl mx-auto text-center space-y-8 mt-20">
-          <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight">
+          <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 antialiased leading-[1.25] sm:leading-[1.2] py-3 sm:py-4">
             Sometimes, healing starts
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600">
+            <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600 py-2 sm:py-3 leading-[1.05]">
               just by being heard
             </span>
           </h2>
