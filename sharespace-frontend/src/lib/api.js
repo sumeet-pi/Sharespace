@@ -13,16 +13,58 @@ export async function apiRequest(path, options = {}) {
     headers: { ...defaultHeaders, ...(options.headers || {}) },
     ...options,
   };
-  const res = await fetch(url, merged);
-  const isJson = res.headers.get('content-type')?.includes('application/json');
-  const data = isJson ? await res.json() : await res.text();
-  if (!res.ok) {
-    const message = isJson && data?.message ? data.message : `Request failed (${res.status})`;
-    const error = new Error(message);
-    error.status = res.status;
-    error.data = data;
-    throw error;
+  
+  try {
+    const res = await fetch(url, merged);
+    
+    // Check content type before reading body - only read once
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    
+    // Read response body only once - never read twice
+    let data = null;
+    let message = '';
+    
+    try {
+      data = isJson ? await res.json() : await res.text();
+      
+      // Extract message from various possible fields (only if JSON)
+      if (isJson && data && typeof data === 'object') {
+        message = data?.message || data?.error || data?.detail || '';
+      }
+    } catch (parseError) {
+      // If parsing fails, create a minimal error response
+      // Log parsing error to console (silent to user)
+      console.error('Response parsing error:', parseError);
+      if (isJson) {
+        data = { message: `Request failed (${res.status})` };
+      } else {
+        data = `Request failed (${res.status})`;
+      }
+      message = '';
+    }
+    
+    // Always return clean structure - never undefined
+    return {
+      ok: res.ok === true,
+      status: res.status || 0,
+      data: res.ok ? data : null,
+      message: message || '',
+      error: res.ok ? null : data
+    };
+  } catch (fetchError) {
+    // Handle network errors (fetch failed, TypeError, CORS, etc.)
+    // Log network error to console (silent to user)
+    console.error('Network error:', fetchError);
+    
+    // Always return clean structure for network errors
+    return {
+      ok: false,
+      status: 0,
+      data: null,
+      message: '',
+      error: fetchError
+    };
   }
-  return data;
 }
 

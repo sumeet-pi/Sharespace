@@ -53,7 +53,7 @@ const ProfilePage = ({ user, onLogout }) => {
       const res = await apiRequest('/users/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const me = res?.user;
+      const me = res?.ok ? res?.data?.user : null;
       if (me) {
         // Debug
         console.log('Loaded profile', me);
@@ -159,27 +159,32 @@ const ProfilePage = ({ user, onLogout }) => {
         },
         body: JSON.stringify(payload),
       });
-  
-      if (res?.user) {
-        console.log('Update success', res.user);
-  
+      
+      if (!res?.ok) {
+        throw new Error(res?.message || 'Failed to update profile');
+      }
+      
+      const updatedUser = res?.data?.user;
+      if (updatedUser) {
+        console.log('Update success', updatedUser);
+
         // Update current state instantly
         setProfile({
-          userId: res.user.id,
-          name: res.user.name,
-          bio: res.user.bio,
-          joinDate: res.user.createdAt,
-          profilePicture: res.user.profilePictureUrl,
+          userId: updatedUser.id,
+          name: updatedUser.name,
+          bio: updatedUser.bio,
+          joinDate: updatedUser.createdAt,
+          profilePicture: updatedUser.profilePictureUrl,
         });
   
         // Update localStorage
-        localStorage.setItem('sharespace_user', JSON.stringify(res.user));
+        localStorage.setItem('sharespace_user', JSON.stringify(updatedUser));
         window.dispatchEvent(new Event('storage'));
   
         toast.success('Profile updated successfully! 🎉');
       }
 
-      setUser(res.user);
+      setUser(updatedUser);
   
       setIsEditModalOpen(false);
   

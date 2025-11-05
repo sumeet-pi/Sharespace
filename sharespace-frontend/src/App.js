@@ -32,9 +32,9 @@ function App() {
           const res = await apiRequest('/auth/verify', {
             headers: { Authorization: `Bearer ${token}` },
           });
-          if (res?.valid && res?.user) {
-            setUser(res.user);
-            try { localStorage.setItem('sharespace_user', JSON.stringify(res.user)); } catch {}
+          if (res?.ok && res?.data?.valid && res?.data?.user) {
+            setUser(res.data.user);
+            try { localStorage.setItem('sharespace_user', JSON.stringify(res.data.user)); } catch {}
           } else {
             localStorage.removeItem('sharespace_token');
             localStorage.removeItem('sharespace_user');
