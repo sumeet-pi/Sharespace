@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { toast } from 'sonner';
 import { Heart, Mail, Lock, User } from 'lucide-react';
 import { apiRequest } from '../lib/api';
+import { useUser } from "@/hooks/useUser";
 
 // Email validation regex
 const isValidEmail = (email) => {
@@ -17,6 +18,7 @@ const isValidEmail = (email) => {
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate();
+  const { setUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', name: '' });
@@ -131,13 +133,21 @@ const LoginPage = ({ onLogin }) => {
       
       // Handle successful response
       if (result.ok && result.data) {
-        const { token, user } = result.data;
+        let { token, user } = result.data;
         if (token) {
           localStorage.setItem('sharespace_token', token);
         }
         if (user) {
+          // Normalize avatar to local path under /pfp and ensure profilePictureUrl is set
+          const avatarFile = (user.avatar || '').replace(/^\/?pfp\//, '');
+          const profilePictureUrl = user.profilePictureUrl?.startsWith('/pfp/')
+            ? user.profilePictureUrl
+            : (avatarFile ? `/pfp/${avatarFile}` : '/pfp/default.png');
+          user = { ...user, profilePictureUrl };
           try { localStorage.setItem('sharespace_user', JSON.stringify(user)); } catch {}
-          onLogin(user);
+          // Update global user context so Sidebar and others re-render immediately
+          try { setUser(user); } catch {}
+          if (typeof onLogin === 'function') onLogin(user);
         }
         
         // Clear errors on successful login
@@ -266,8 +276,14 @@ const LoginPage = ({ onLogin }) => {
         localStorage.setItem('sharespace_token', token);
       }
       if (user) {
-        try { localStorage.setItem('sharespace_user', JSON.stringify(user)); } catch {}
-        onLogin(user);
+        const avatarFile = (user.avatar || '').replace(/^\/?pfp\//, '');
+        const profilePictureUrl = user.profilePictureUrl?.startsWith('/pfp/')
+          ? user.profilePictureUrl
+          : (avatarFile ? `/pfp/${avatarFile}` : '/pfp/default.png');
+        const normalized = { ...user, profilePictureUrl };
+        try { localStorage.setItem('sharespace_user', JSON.stringify(normalized)); } catch {}
+        try { setUser(normalized); } catch {}
+        if (typeof onLogin === 'function') onLogin(normalized);
       }
 
       toast.success('🎉 Welcome to ShareSpace!');

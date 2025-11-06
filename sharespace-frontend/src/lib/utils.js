@@ -42,6 +42,6 @@ export function resolveAvatarUrl(pathOrUrl) {
       return null;
     }
   }
-  // Already a full URL or data URL
-  return pathOrUrl;
+  // For non-local paths, do not return external URLs (enforce local-only avatars)
+  return null;
 }

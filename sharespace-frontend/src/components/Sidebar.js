@@ -10,9 +10,6 @@ import { resolveAvatarUrl } from "@/lib/utils";
 const Sidebar = ({ onLogout }) => {
   const navigate = useNavigate();
   const { user } = useUser();
-
-
-  const [profileData, setProfileData] = useState(null);
   const taglines = [
     'Your safe space for healing.',
     'Breathe. Reflect. Heal.',
@@ -22,33 +19,7 @@ const Sidebar = ({ onLogout }) => {
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [taglineVisible, setTaglineVisible] = useState(true);
 
-  useEffect(() => {
-    const loadProfileData = () => {
-      try {
-        const savedUser = JSON.parse(localStorage.getItem('sharespace_user'));
-        if (savedUser) {
-          setProfileData({
-            name: savedUser.name,
-            imageDataUrl: savedUser.profilePictureUrl || null,
-          });
-        } else {
-          setProfileData({ name: user?.name || 'User', imageDataUrl: null });
-        }
-      } catch (err) {
-        console.warn("Error loading user from localStorage", err);
-      }
-    };
-  
-    loadProfileData();
-  
-    // ✅ Listen for localStorage updates from other components
-    const onStorageChange = (e) => {
-      if (e.key === 'sharespace_user') loadProfileData();
-    };
-    window.addEventListener('storage', onStorageChange);
-  
-    return () => window.removeEventListener('storage', onStorageChange);
-  }, [user?.name]);
+  // Sidebar relies solely on user from context; no localStorage reads here.
   
 
   useEffect(() => {
@@ -137,18 +108,31 @@ const Sidebar = ({ onLogout }) => {
           >
             <div className="flex items-center space-x-3 w-full">
               <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border-2 border-white shadow-sm flex-shrink-0">
-                {user?.profilePictureUrl ? (
-                  <AvatarImage src={resolveAvatarUrl(user?.profilePictureUrl) || user?.profilePictureUrl} alt={user?.name || 'User'} />
-                ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-green-400 to-blue-500 text-white text-xs sm:text-sm font-semibold">
-                    {(user?.name || 'U')
-                      .split(' ')
-                      .map(n => n[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </AvatarFallback>
-                )}
+                {(() => {
+                  // Accept either a full '/pfp/filename.png' or a bare 'filename.png'
+                  const raw = (user?.profilePictureUrl || user?.avatar || 'default.png');
+                  const fileName = raw.replace(/^\/?pfp\//, '');
+                  const normalizedPath = `/pfp/${fileName}`;
+                  const src = resolveAvatarUrl(normalizedPath);
+                  const defaultSrc = resolveAvatarUrl('/pfp/default.png');
+                  const finalSrc = src || defaultSrc;
+                  return finalSrc ? (
+                    <AvatarImage
+                      src={finalSrc}
+                      alt={user?.name || 'User'}
+                      onError={(e) => { if (defaultSrc) e.currentTarget.src = defaultSrc; }}
+                    />
+                  ) : (
+                    <AvatarFallback className="bg-gradient-to-br from-green-400 to-blue-500 text-white text-xs sm:text-sm font-semibold">
+                      {(user?.name || 'U')
+                        .split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  );
+                })()}
               </Avatar>
               <div className="flex-1 min-w-0">
                 <span className="font-medium text-sm truncate block text-center sm:text-left">{user?.name || 'User'}</span>
