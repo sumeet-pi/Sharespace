@@ -16,37 +16,37 @@ const ResourcesPage = ({ user, onLogout }) => {
       title: 'Understanding Stress and How to Manage It',
       category: 'Stress Management',
       description: 'Learn effective techniques to identify, manage, and reduce stress in your daily life.',
-      link: '#'
+      link: 'https://www.cdc.gov/mental-health/living-with/index.html'
     },
     {
       title: 'The Science of Burnout: Prevention and Recovery',
       category: 'Mental Health',
       description: 'Understand the signs of burnout and discover evidence-based strategies for prevention and healing.',
-      link: '#'
+      link: 'https://www.helpguide.org/mental-health/stress/burnout-prevention-and-recovery'
     },
     {
       title: 'Cultivating Positivity: Daily Practices for Well-being',
       category: 'Wellness',
       description: 'Simple, scientifically-backed practices to build resilience and maintain positive mental health.',
-      link: '#'
+      link: 'https://www.health.harvard.edu/topics/positive-psychology'
     },
     {
       title: 'Building Healthy Relationships',
       category: 'Relationships',
       description: 'Communication strategies and boundary-setting techniques for healthier connections.',
-      link: '#'
+      link: 'https://www.betterhealth.vic.gov.au/health/healthyliving/relationships-and-communication'
     },
     {
       title: 'Mindfulness and Meditation for Beginners',
       category: 'Mindfulness',
       description: 'Getting started with mindfulness practices to reduce anxiety and improve focus.',
-      link: '#'
+      link: 'https://www.mindful.org/meditation/mindfulness-getting-started/'
     },
     {
       title: 'Sleep Hygiene: Better Rest for Better Mental Health',
       category: 'Sleep',
       description: 'Evidence-based tips for improving sleep quality and its impact on mental well-being.',
-      link: '#'
+      link: 'https://www.sleepfoundation.org/sleep-hygiene'
     },
   ];
 
@@ -152,9 +152,11 @@ const ResourcesPage = ({ user, onLogout }) => {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-2">{article.title}</h3>
                   <p className="text-sm text-gray-600 mb-4">{article.description}</p>
+                  <a href={article.link} target="_blank" rel="noopener noreferrer">
                   <Button variant="link" className="p-0 h-auto text-blue-600">
                     Read More →
                   </Button>
+                  </a>
                 </Card>
               ))}
             </div>
