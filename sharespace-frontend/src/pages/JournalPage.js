@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -6,6 +6,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
 import { BookOpen, Trash2, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -16,8 +17,51 @@ const JournalPage = ({ user, onLogout }) => {
   const [showCreate, setShowCreate] = useState(false);
   const [newEntry, setNewEntry] = useState({ title: '', content: '', entry_type: 'daily', mood: '😊' });
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState(null);
 
   const moodEmojis = ['😊', '😢', '😰', '😔', '😤', '🤗', '💪', '🌟'];
+
+  // Get localStorage key for current user
+  const getStorageKey = () => {
+    if (!user?.id) return null;
+    return `sharespace_journals_${user.id}`;
+  };
+
+  // Load journals from localStorage on mount
+  useEffect(() => {
+    const storageKey = getStorageKey();
+    if (!storageKey) return;
+
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const journals = JSON.parse(stored);
+        // Sort by createdAt (newest first)
+        const sorted = journals.sort((a, b) => {
+          const dateA = new Date(a.createdAt || a.created_at);
+          const dateB = new Date(b.createdAt || b.created_at);
+          return dateB - dateA;
+        });
+        setEntries(sorted);
+      }
+    } catch (error) {
+      console.error('Error loading journals from localStorage:', error);
+    }
+  }, [user?.id]);
+
+  // Save journals to localStorage
+  const saveToLocalStorage = (journals) => {
+    const storageKey = getStorageKey();
+    if (!storageKey) return;
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(journals));
+    } catch (error) {
+      console.error('Error saving journals to localStorage:', error);
+      toast.error('Failed to save journal');
+    }
+  };
 
   const handleCreate = (e) => {
     e.preventDefault();
@@ -28,23 +72,53 @@ const JournalPage = ({ user, onLogout }) => {
 
     setLoading(true);
     setTimeout(() => {
-      const entry = {
-        id: Date.now(),
-        ...newEntry,
+      const journal = {
+        id: `journal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        title: newEntry.title.trim(),
+        content: newEntry.content.trim(),
+        mood: newEntry.mood,
+        createdAt: new Date().toISOString(),
+        // Keep entry_type for backward compatibility with existing UI
+        entry_type: newEntry.entry_type,
         created_at: new Date().toISOString(),
       };
-      setEntries([entry, ...entries]);
-      toast.success('Entry saved!');
+
+      const updatedEntries = [journal, ...entries];
+      // Sort by createdAt (newest first)
+      const sorted = updatedEntries.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at);
+        const dateB = new Date(b.createdAt || b.created_at);
+        return dateB - dateA;
+      });
+
+      setEntries(sorted);
+      saveToLocalStorage(sorted);
+      toast.success('Journal saved successfully ✅');
       setNewEntry({ title: '', content: '', entry_type: 'daily', mood: '😊' });
       setShowCreate(false);
       setLoading(false);
     }, 500);
   };
 
-  const handleDelete = (entryId) => {
-    if (!window.confirm('Delete this entry?')) return;
-    setEntries(entries.filter(e => e.id !== entryId));
-    toast.success('Entry deleted');
+  const handleDeleteClick = (entryId) => {
+    setEntryToDelete(entryId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!entryToDelete) return;
+    
+    const updatedEntries = entries.filter(e => e.id !== entryToDelete);
+    setEntries(updatedEntries);
+    saveToLocalStorage(updatedEntries);
+    toast.error('Journal deleted ❌');
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
   };
 
   const filteredEntries = activeTab === 'all'
@@ -150,7 +224,7 @@ const JournalPage = ({ user, onLogout }) => {
             {filteredEntries.length === 0 ? (
               <Card className="p-12 text-center bg-white/70 backdrop-blur-sm border-none shadow-lg">
                 <BookOpen className="mx-auto mb-4 text-gray-400" size={48} />
-                <p className="text-gray-500 text-lg">No entries yet. Start journaling!</p>
+                <p className="text-gray-500 text-lg">No journals yet. Start your first entry!</p>
               </Card>
             ) : (
               filteredEntries.map((entry) => (
@@ -165,13 +239,13 @@ const JournalPage = ({ user, onLogout }) => {
                       <div>
                         <h3 className="text-xl font-semibold text-gray-800">{entry.title}</h3>
                         <p className="text-sm text-gray-500">
-                          {new Date(entry.created_at).toLocaleDateString()} • {entry.entry_type}
+                          {new Date(entry.createdAt || entry.created_at).toLocaleDateString()} • {entry.entry_type}
                         </p>
                       </div>
                     </div>
                     <Button
                       data-testid={`delete-entry-${entry.id}`}
-                      onClick={() => handleDelete(entry.id)}
+                      onClick={() => handleDeleteClick(entry.id)}
                       variant="ghost"
                       size="sm"
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -186,6 +260,35 @@ const JournalPage = ({ user, onLogout }) => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-white/95 backdrop-blur-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Delete Journal Entry</DialogTitle>
+            <DialogDescription className="text-gray-600 pt-2">
+              Are you sure you want to delete this journal entry? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDeleteCancel}
+              className="sm:mt-0"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
