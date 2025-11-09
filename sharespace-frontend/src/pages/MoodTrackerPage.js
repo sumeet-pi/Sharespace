@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Textarea } from '../components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
-import { TrendingUp, Plus } from 'lucide-react';
+import { TrendingUp, Plus, Trash2 } from 'lucide-react';
 
 const moodOptions = [
   { emoji: '😊', label: 'Happy', color: 'bg-yellow-100 text-yellow-700' },
@@ -23,6 +24,49 @@ const MoodTrackerPage = ({ user, onLogout }) => {
   const [selectedMood, setSelectedMood] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState(null);
+
+  // Get localStorage key for current user
+  const getStorageKey = () => {
+    if (!user?.id) return null;
+    return `sharespace_moods_${user.id}`;
+  };
+
+  // Load moods from localStorage on mount
+  useEffect(() => {
+    const storageKey = getStorageKey();
+    if (!storageKey) return;
+
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const moods = JSON.parse(stored);
+        // Sort by created_at (newest first)
+        const sorted = moods.sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA;
+        });
+        setEntries(sorted);
+      }
+    } catch (error) {
+      console.error('Error loading moods from localStorage:', error);
+    }
+  }, [user?.id]);
+
+  // Save moods to localStorage
+  const saveToLocalStorage = (moods) => {
+    const storageKey = getStorageKey();
+    if (!storageKey) return;
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(moods));
+    } catch (error) {
+      console.error('Error saving moods to localStorage:', error);
+      toast.error('Failed to save mood entry');
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -34,18 +78,47 @@ const MoodTrackerPage = ({ user, onLogout }) => {
     setLoading(true);
     setTimeout(() => {
       const newEntry = {
-        id: Date.now(),
+        id: `mood_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         mood: selectedMood,
         note: note.trim(),
         created_at: new Date().toISOString(),
       };
-      setEntries([newEntry, ...entries]);
+      const updatedEntries = [newEntry, ...entries];
+      // Sort by created_at (newest first)
+      const sorted = updatedEntries.sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return dateB - dateA;
+      });
+      setEntries(sorted);
+      saveToLocalStorage(sorted);
       toast.success('Mood logged!');
       setSelectedMood('');
       setNote('');
       setShowCreate(false);
       setLoading(false);
     }, 500);
+  };
+
+  const handleDeleteClick = (entryId) => {
+    setEntryToDelete(entryId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!entryToDelete) return;
+    
+    const updatedEntries = entries.filter(e => e.id !== entryToDelete);
+    setEntries(updatedEntries);
+    saveToLocalStorage(updatedEntries);
+    toast.error('Mood entry deleted ❌');
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setEntryToDelete(null);
   };
 
   const getMoodStats = () => {
@@ -182,6 +255,15 @@ const MoodTrackerPage = ({ user, onLogout }) => {
                             <p className="text-gray-600 text-sm">{entry.note}</p>
                           )}
                         </div>
+                        <Button
+                          data-testid={`delete-mood-${entry.id}`}
+                          onClick={() => handleDeleteClick(entry.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 size={18} />
+                        </Button>
                       </div>
                     </Card>
                   );
@@ -191,6 +273,35 @@ const MoodTrackerPage = ({ user, onLogout }) => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-white/95 backdrop-blur-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Delete Mood Entry</DialogTitle>
+            <DialogDescription className="text-gray-600 pt-2">
+              Are you sure you want to delete this mood entry? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDeleteCancel}
+              className="sm:mt-0"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
